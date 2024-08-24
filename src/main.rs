@@ -80,6 +80,23 @@ fn is_valid_sha1_hash(s: &str) -> bool {
     s.len() == 40 && s.chars().all(|c| c.is_digit(16))
 }
 
+fn parse_password_file(file_path: &str) -> io::Result<Vec<String>> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+    let lines = reader.lines().collect::<io::Result<Vec<String>>>()?;
+    let mut hash_list = Vec::with_capacity(lines.len());
+    for line in lines.into_iter() {
+        let hash_to_check = if is_valid_sha1_hash(&line) {
+            line.to_string()
+        } else {
+            sha1_hash(&line)
+        };
+        println!("Hash: {}", &hash_to_check);
+        hash_list.push(hash_to_check);
+    }
+    Ok(hash_list)
+}
+
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
@@ -88,8 +105,18 @@ fn main() -> io::Result<()> {
     }
     let file_path = &args[1];
     let input = &args[2];
+
     let target_hash = if is_valid_sha1_hash(input) {
         input.to_string()
+    } else if std::path::Path::new(input).exists() {
+        let hash_list = parse_password_file(input)?;
+        for hash in hash_list {
+            match binary_search(file_path, &hash)? {
+                Some(line) => println!("Found: {}", line),
+                None => println!("Hash not found."),
+            }
+        }
+        std::process::exit(0);
     } else {
         sha1_hash(input)
     };
