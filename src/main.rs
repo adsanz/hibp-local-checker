@@ -44,11 +44,6 @@ fn binary_search(file_path: &str, target_hash: &str) -> io::Result<Option<String
         let mid_line = buffer.trim_end();
         let mid_hash = mid_line.split(':').next().unwrap_or("");
 
-        println!(
-            "Iteration {}: Comparing target hash {} with {}",
-            iterations, target_hash, mid_hash
-        );
-
         match mid_hash.cmp(target_hash) {
             std::cmp::Ordering::Equal => {
                 println!("Total iterations: {}", iterations);
